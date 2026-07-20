@@ -148,18 +148,18 @@
             width: 100%; height: 100%; 
             transform-origin: left center;
             transform: scaleX(1);
-            background-color: #3b82f6; /* 시작은 안정적인 파란색 */
+            background-color: #3b82f6;
         }
 
-        /* 시간에 비례해 점진적이고 더욱 빠르게 빨간색으로 변환되는 Keyframe */
         .timer-bar.active {
             animation: timerProgress var(--timer-duration) linear forwards;
         }
 
+        /* 50% 시점부터 점진적이고 보다 정밀한 속도로 빨간색 경고 변환 */
         @keyframes timerProgress {
             0% { transform: scaleX(1); background-color: #3b82f6; }
-            50% { transform: scaleX(0.5); background-color: #3b82f6; }  /* 절반 시점(50%)까지는 완연한 파란색 */
-            85% { transform: scaleX(0.15); background-color: #ef4444; } /* 50%~85% 구간 동안 빠르게 경고 빨간색으로 변경 */
+            50% { transform: scaleX(0.5); background-color: #3b82f6; }
+            85% { transform: scaleX(0.15); background-color: #ef4444; }
             100% { transform: scaleX(0); background-color: #ef4444; }
         }
 
@@ -308,9 +308,14 @@
             margin-bottom: 20px;
         }
 
+        /* 🚨 중요: iOS 저장 팝업을 차단하던 CSS를 전면 해제 및 강제 덮어쓰기 */
         .viewer-image-wrapper img {
             width: 100%;
             display: block;
+            -webkit-touch-callout: default !important; /* 롱클릭 시스템 저장 활성화 */
+            -webkit-user-select: auto !important;     /* 이미지 선택권 보장 */
+            user-select: auto !important;
+            pointer-events: auto !important;           /* 터치 차단 전면 해제 */
         }
 
         .viewer-notice {
@@ -581,7 +586,6 @@
             return { r: Math.round((r + m) * 255), g: Math.round((g + m) * 255), b: Math.round((b + m) * 255) };
         }
 
-        // sRGB -> 선형 XYZ 변환
         function rgbToXyz(r, g, b) {
             let rL = r / 255, gL = g / 255, bL = b / 255;
             rL = rL > 0.04045 ? Math.pow((rL + 0.055) / 1.055, 2.4) : rL / 12.92;
@@ -597,7 +601,6 @@
             };
         }
 
-        // XYZ -> CIE Lab 변환
         function xyzToLab(x, y, z) {
             const refX = 95.047, refY = 100.000, refZ = 108.883;
             let xt = x / refX, yt = y / refY, zt = z / refZ;
@@ -613,7 +616,6 @@
             };
         }
 
-        // CIE76 색차 알고리즘 기반 색감 판독 엔진
         function getVisualColorSimilarity(rgb1, rgb2) {
             const xyz1 = rgbToXyz(rgb1.r, rgb1.g, rgb1.b);
             const lab1 = xyzToLab(xyz1.x, xyz1.y, xyz1.z);
@@ -645,14 +647,13 @@
             pickerBox.style.backgroundColor = `rgb(${currentRGB.r}, ${currentRGB.g}, ${currentRGB.b})`;
         }
 
-        // 하드웨어 가속 기반 애니메이션 타이머
         function startTimer() {
             clearTimeout(timerTimeout);
             
             timerBar.classList.remove('active');
             timerBar.style.setProperty('--timer-duration', `${timeLimit}s`);
             
-            void timerBar.offsetWidth; // 리플로우 강제 유발로 캐시 초기화
+            void timerBar.offsetWidth; 
             
             timerBar.classList.add('active');
             
@@ -833,7 +834,8 @@
             resultModal.style.display = 'flex';
         }
 
-        function generateAndShowShareImage() {
+        // 고상도 Canvas 이미지 변환 및 기기 순정 공유창 지원
+        function handleShare() {
             const canvas = document.createElement('canvas');
             const ctx = canvas.getContext('2d');
             
@@ -906,8 +908,34 @@
                 startY += 120;
             });
             
-            const imageURL = canvas.toDataURL('image/png');
-            viewerImg.src = imageURL;
+            // Web Share API 작동 시도 (모바일 기본 네이티브 전송창 연동)
+            canvas.toBlob((blob) => {
+                if (!blob) {
+                    fallbackViewerPopup(canvas.toDataURL('image/png'));
+                    return;
+                }
+                const file = new File([blob], `absolute_color_${avgScore}.png`, { type: 'image/png' });
+                
+                // 디바이스 자체 공유 API 호출 검사
+                if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                    navigator.share({
+                        files: [file],
+                        title: '절대 색감 테스트 결과',
+                        text: `내 절대 색감 능력은 평균 ${avgScore}점! 절대 색감에 도전해보세요!`
+                    }).catch((err) => {
+                        // 사용자가 취소했거나 연동 실패 시 안전하게 인앱 팝업 띄우기
+                        fallbackViewerPopup(canvas.toDataURL('image/png'));
+                    });
+                } else {
+                    // API 미지원 기기 (데스크톱, 하위 기기 등)의 경우 다운로드용 팝업 전개
+                    fallbackViewerPopup(canvas.toDataURL('image/png'));
+                }
+            }, 'image/png');
+        }
+
+        // 기기 자체 공유를 지원하지 않거나 실패했을 때 띄우는 이중 백업용 이미지 뷰어
+        function fallbackViewerPopup(dataUrl) {
+            viewerImg.src = dataUrl;
             viewerModal.style.display = 'flex';
         }
 
@@ -943,7 +971,7 @@
             });
 
             bindPointerTap(document.getElementById('btn-share-img'), () => {
-                generateAndShowShareImage();
+                handleShare();
             });
 
             bindPointerTap(document.getElementById('btn-close-viewer'), () => {
