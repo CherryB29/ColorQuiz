@@ -49,39 +49,99 @@
         h1 { font-size: 1.7rem; font-weight: 800; color: var(--text-main); letter-spacing: -0.5px; }
         .sub-title { font-size: 0.95rem; color: var(--text-sub); margin-top: 6px; }
         
-        .lobby-content { flex: 1; display: flex; flex-direction: column; justify-content: center; gap: 20px; }
-        .best-records {
-            background: #f1f5f9; border-radius: 20px; padding: 18px;
-            text-align: left; font-size: 0.95rem; color: #334155;
-            display: flex; flex-direction: column; gap: 10px;
-        }
-        .best-records span { font-weight: 700; color: var(--primary); float: right; }
+        .lobby-content { flex: 1; display: flex; flex-direction: column; justify-content: center; gap: 24px; }
         
         .mode-btn {
-            padding: 18px; border-radius: 18px; border: none; font-size: 1.1rem; font-weight: 700;
-            color: white; cursor: pointer; transition: transform 0.1s;
+            width: 100%;
+            padding: 16px 20px;
+            border-radius: 18px;
+            border: none;
+            color: white;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            touch-action: none;
+            -webkit-tap-highlight-color: transparent;
+            cursor: pointer;
+            transition: transform 0.1s, opacity 0.2s;
         }
+        
+        .mode-btn .btn-title {
+            font-size: 1.15rem;
+            font-weight: 800;
+        }
+        
+        .mode-btn .btn-record {
+            font-size: 0.8rem;
+            opacity: 0.9;
+            font-weight: 500;
+        }
+
         #btn-practice { background: var(--success); box-shadow: 0 4px 14px rgba(16, 185, 129, 0.25); }
         #btn-timeattack { background: var(--danger); box-shadow: 0 4px 14px rgba(239, 68, 68, 0.25); }
 
         #time-setup {
-            display: none; background: #fff5f5; padding: 16px; border-radius: 18px;
+            display: none; background: #fff5f5; padding: 20px; border-radius: 18px;
             border: 1px solid #fee2e2; animation: fadeIn 0.3s ease;
         }
-        #time-setup label { font-size: 0.9rem; font-weight: 700; color: #991b1b; display: block; margin-bottom: 10px;}
-        .time-inputs { display: flex; justify-content: center; gap: 10px; }
-        .time-inputs input {
-            width: 80px; padding: 10px; text-align: center; border: 1px solid #fca5a5;
-            border-radius: 10px; font-size: 1.1rem; font-weight: 700; color: #991b1b; outline: none;
+        #time-setup label { font-size: 0.9rem; font-weight: 700; color: #991b1b; display: block; margin-bottom: 12px;}
+        
+        .slider-container {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            align-items: center;
+            margin-bottom: 14px;
         }
-        .start-ta-btn { padding: 0 20px; background: var(--danger); color: white; border: none; border-radius: 10px; font-weight: 700; }
+
+        .range-slider {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 8px;
+            border-radius: 4px;
+            background: #fca5a5;
+            outline: none;
+        }
+
+        .range-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: var(--danger);
+            cursor: pointer;
+            border: 2px solid white;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+        }
+
+        .time-value-display {
+            font-size: 1.4rem;
+            font-weight: 900;
+            color: #ef4444;
+        }
+
+        .start-ta-btn { 
+            width: 100%;
+            padding: 14px; 
+            background: var(--danger); 
+            color: white; 
+            border: none; 
+            border-radius: 12px; 
+            font-weight: 700; 
+            font-size: 1rem;
+            touch-action: none;
+        }
 
         #game-play { display: none; height: 100%; flex-direction: column; justify-content: space-between; flex: 1; }
         .game-header { margin-bottom: 12px; }
         .stats { font-size: 1rem; font-weight: 700; color: var(--text-sub); display: flex; justify-content: space-between; padding: 0 4px; }
         
         .timer-container { width: 100%; height: 6px; background: #e2e8f0; border-radius: 3px; margin-top: 10px; overflow: hidden; display: none; }
-        .timer-bar { width: 100%; height: 100%; background: var(--danger); transition: width 0.1s linear; }
+        .timer-bar { width: 100%; height: 100%; background: var(--danger); transition: width 0.05s linear; }
 
         .color-display { display: flex; gap: 16px; margin: 12px 0; }
         .color-card-wrapper { flex: 1; display: flex; flex-direction: column; gap: 6px; }
@@ -113,10 +173,8 @@
             transform: translate(-50%, -50%); pointer-events: none; z-index: 2;
         }
 
-        /* 🌈 정교하게 수정한 세로 전용 색상 슬라이더 바 */
         .hue-track {
             width: 32px; height: 100%; position: relative; border-radius: 16px;
-            /* 0도(Red)에서 시작하여 360도(Red)로 완벽 순환하는 표준 그라데이션 배치 */
             background: linear-gradient(to bottom, #ff0000 0%, #ffff00 17%, #00ff00 33%, #00ffff 50%, #0000ff 67%, #ff00ff 83%, #ff0000 100%);
             box-shadow: inset 0 2px 4px rgba(0,0,0,0.15), 0 4px 12px rgba(0,0,0,0.05);
             touch-action: none;
@@ -132,9 +190,14 @@
         .action-btn {
             width: 100%; padding: 18px; border: none; border-radius: 18px;
             background-color: var(--primary); color: white; font-size: 1.1rem; font-weight: 700;
-            box-shadow: 0 4px 14px rgba(79, 70, 229, 0.3); -webkit-tap-highlight-color: transparent;
+            box-shadow: 0 4px 14px rgba(79, 70, 229, 0.3);
+            touch-action: none;
         }
-        button:active { transform: scale(0.97); opacity: 0.9; }
+        
+        .mode-btn:active, .start-ta-btn:active, .action-btn:active {
+            transform: scale(0.97);
+            opacity: 0.9;
+        }
 
         /* 결과 모달 */
         .modal {
@@ -143,26 +206,66 @@
         }
         .modal-content {
             background: white; padding: 24px; border-radius: 28px; width: 100%; max-width: 350px;
-            max-height: 85%; display: flex; flex-direction: column; justify-content: space-between;
+            max-height: 90%; display: flex; flex-direction: column; justify-content: space-between;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
         }
-        .score-text { font-size: 2.6rem; font-weight: 900; color: var(--primary); margin: 8px 0; }
-        .evaluation-p { color: var(--text-sub); font-size: 0.95rem; line-height: 1.5; margin-bottom: 16px; }
+        
+        .meta-info {
+            font-size: 0.8rem;
+            color: var(--text-sub);
+            margin-top: -4px;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+
+        .score-text { font-size: 2.6rem; font-weight: 900; color: var(--primary); margin: 4px 0; }
+        .evaluation-p { color: var(--text-sub); font-size: 0.9rem; line-height: 1.4; margin-bottom: 12px; }
         
         .report-container {
             flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch;
-            margin-bottom: 16px; padding-right: 4px; display: flex; flex-direction: column; gap: 10px;
+            margin-bottom: 16px; padding-right: 4px; display: flex; flex-direction: column; gap: 8px;
         }
         .report-container::-webkit-scrollbar { width: 4px; }
         .report-container::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 2px; }
 
         .report-item {
             display: flex; align-items: center; justify-content: space-between;
-            background: #f8fafc; padding: 10px 14px; border-radius: 14px; border: 1px solid #f1f5f9;
+            background: #f8fafc; padding: 8px 12px; border-radius: 12px; border: 1px solid #f1f5f9;
         }
-        .report-title { font-size: 0.85rem; font-weight: 700; color: var(--text-main); text-align: left;}
-        .report-score { font-size: 0.9rem; font-weight: 800; color: var(--primary); }
-        .report-colors { display: flex; gap: 6px; }
-        .report-mini-box { width: 32px; height: 32px; border-radius: 8px; box-shadow: inset 0 0 0 1px rgba(0,0,0,0.08); }
+        .report-title { font-size: 0.8rem; font-weight: 700; color: var(--text-main); text-align: left;}
+        .report-score { font-size: 0.85rem; font-weight: 800; color: var(--primary); }
+        .report-colors { display: flex; gap: 4px; }
+        .report-mini-box { width: 28px; height: 28px; border-radius: 6px; box-shadow: inset 0 0 0 1px rgba(0,0,0,0.08); }
+
+        /* 하단 모달 액션 버튼 수정 */
+        .result-actions {
+            display: flex;
+            gap: 10px;
+            width: 100%;
+        }
+        .result-actions #btn-back-lobby {
+            flex: 1;
+        }
+        .share-btn {
+            width: 58px;
+            height: 58px;
+            padding: 0 !important;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: #3b82f6;
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.25);
+            border-radius: 18px !important;
+        }
+        .share-btn svg {
+            width: 24px;
+            height: 24px;
+            fill: none;
+            stroke: white;
+            stroke-width: 2.5;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
 
         @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
     </style>
@@ -170,31 +273,36 @@
 <body>
 
     <div class="game-container">
+        <!-- 1. 로비 화면 -->
         <div id="lobby-screen" class="lobby-content">
             <div>
                 <h1>절대 색감 테스트</h1>
                 <div class="sub-title">당신의 눈썰미는 몇 점짜리일까요?</div>
             </div>
             
-            <div class="best-records">
-                <div>🟩 연습 모드 최고점 <span id="best-practice">0.0점</span></div>
-                <div>🟥 타임어택 최고점 <span id="best-timeattack">0.0점</span></div>
-            </div>
-
-            <div style="display: flex; flex-direction: column; gap: 12px;">
-                <button id="btn-practice" class="mode-btn" onclick="selectMode('practice')">연습 모드 시작</button>
-                <button id="btn-timeattack" class="mode-btn" onclick="toggleTimeSetup()">타임 어택 모드</button>
+            <div style="display: flex; flex-direction: column; gap: 14px; width: 100%;">
+                <button id="btn-practice" class="mode-btn">
+                    <span class="btn-title">연습 모드 시작</span>
+                    <span class="btn-record" id="record-practice-text">최고 최고기록: 0.0점</span>
+                </button>
+                
+                <button id="btn-timeattack" class="mode-btn">
+                    <span class="btn-title">타임 어택 모드</span>
+                    <span class="btn-record" id="record-timeattack-text">최고 최고기록: 0.0점</span>
+                </button>
                 
                 <div id="time-setup">
-                    <label>⏱️ 제한 시간 설정 (초)</label>
-                    <div class="time-inputs">
-                        <input type="number" id="time-limit-input" min="3" max="60" value="7" pattern="\d*">
-                        <button class="start-ta-btn" onclick="selectMode('timeattack')">시작</button>
+                    <label>⏱️ 라운드 제한시간 설정</label>
+                    <div class="slider-container">
+                        <span class="time-value-display" id="slider-val-display">7.0초</span>
+                        <input type="range" id="time-limit-range" class="range-slider" min="0.5" max="20" step="0.5" value="7">
                     </div>
+                    <button id="btn-start-ta" class="start-ta-btn">테스트 시작</button>
                 </div>
             </div>
         </div>
 
+        <!-- 2. 게임 플레이 화면 -->
         <div id="game-play">
             <div class="game-header">
                 <div class="stats">
@@ -219,7 +327,7 @@
                 </div>
             </div>
 
-            <div id="round-feedback">정확도 95.5%</div>
+            <div id="round-feedback">색감 정확도 95.5%</div>
 
             <div class="picker-area">
                 <div class="sv-pad" id="sv-pad">
@@ -230,21 +338,32 @@
                 </div>
             </div>
 
-            <button id="submit-btn" class="action-btn" onclick="submitAnswer()">선택 완료</button>
+            <button id="submit-btn" class="action-btn">선택 완료</button>
         </div>
     </div>
 
+    <!-- 3. 결과 모달 -->
     <div id="result-modal" class="modal">
         <div class="modal-content">
             <div>
                 <h2>최종 결과</h2>
                 <div class="score-text"><span id="final-score">0.0</span>점</div>
+                <div class="meta-info" id="game-meta-display">플레이 모드 정보</div>
                 <p id="evaluation-text" class="evaluation-p">결과 분석 중...</p>
             </div>
 
             <div class="report-container" id="report-container"></div>
 
-            <button class="action-btn" onclick="backToLobby()">로비로 돌아가기</button>
+            <div class="result-actions">
+                <button id="btn-back-lobby" class="action-btn">로비로</button>
+                <button id="btn-share-img" class="action-btn share-btn" title="결과 이미지 저장">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                        <polyline points="7 10 12 15 17 10"></polyline>
+                        <line x1="12" y1="15" x2="12" y2="3"></line>
+                    </svg>
+                </button>
+            </div>
         </div>
     </div>
 
@@ -264,7 +383,7 @@
         let currentH = 0, currentS = 50, currentV = 50;
         let roundHistory = [];
 
-        let timeLimit = 7;
+        let timeLimit = 7.0;
         let timerInterval = null;
         let isWaitingNextRound = false;
 
@@ -292,14 +411,52 @@
         const evaluationText = document.getElementById('evaluation-text');
         const reportContainer = document.getElementById('report-container');
 
+        const timeLimitRange = document.getElementById('time-limit-range');
+        const sliderValDisplay = document.getElementById('slider-val-display');
+        const gameMetaDisplay = document.getElementById('game-meta-display');
+
+        function bindPointerTap(element, callback) {
+            let isPointerActive = false;
+            
+            element.addEventListener('pointerdown', (e) => {
+                isPointerActive = true;
+                e.stopPropagation();
+            });
+
+            element.addEventListener('pointerup', (e) => {
+                if (isPointerActive) {
+                    isPointerActive = false;
+                    e.stopPropagation();
+                    e.preventDefault();
+                    callback();
+                }
+            });
+
+            element.addEventListener('pointerleave', () => {
+                isPointerActive = false;
+            });
+            
+            element.addEventListener('click', (e) => {
+                e.preventDefault();
+            });
+        }
+
         function loadBestRecords() {
-            document.getElementById('best-practice').innerText = parseFloat(localStorage.getItem('v2_practice') || '0.0').toFixed(1) + '점';
-            document.getElementById('best-timeattack').innerText = parseFloat(localStorage.getItem('v2_timeattack') || '0.0').toFixed(1) + '점';
+            const bestPractice = parseFloat(localStorage.getItem('v3_practice') || '0.0').toFixed(1);
+            const bestTimeAttack = parseFloat(localStorage.getItem('v3_timeattack') || '0.0').toFixed(1);
+            
+            document.getElementById('record-practice-text').innerText = `최고기록: ${bestPractice}점`;
+            document.getElementById('record-timeattack-text').innerText = `최고기록: ${bestTimeAttack}점`;
         }
 
         function toggleTimeSetup() {
             timeSetup.style.display = timeSetup.style.display === 'block' ? 'none' : 'block';
         }
+
+        timeLimitRange.addEventListener('input', (e) => {
+            timeLimit = parseFloat(e.target.value);
+            sliderValDisplay.innerText = `${timeLimit.toFixed(1)}초`;
+        });
 
         function selectMode(mode) {
             currentGameMode = mode;
@@ -307,10 +464,10 @@
             gamePlayScreen.style.display = 'flex';
             
             if (mode === 'timeattack') {
-                modeTitle.innerText = '⏱️ 타임어택';
+                timeLimit = parseFloat(timeLimitRange.value) || 7.0;
+                modeTitle.innerText = `⏱️ 타임어택 (${timeLimit.toFixed(1)}초)`;
                 modeTitle.style.color = 'var(--danger)';
                 timerContainer.style.display = 'block';
-                timeLimit = parseInt(document.getElementById('time-limit-input').value) || 7;
             } else {
                 modeTitle.innerText = '🟩 연습 모드';
                 modeTitle.style.color = 'var(--success)';
@@ -342,6 +499,74 @@
             return { r: Math.round((r + m) * 255), g: Math.round((g + m) * 255), b: Math.round((b + m) * 255) };
         }
 
+        // ==========================================
+        // 🔬 CIE76 정밀 인간 색채 인지 매핑 변환 엔진
+        // ==========================================
+        
+        // 1단계. 감각 보정용 sRGB -> 선형 XYZ 변환
+        function rgbToXyz(r, g, b) {
+            let rL = r / 255, gL = g / 255, bL = b / 255;
+            rL = rL > 0.04045 ? Math.pow((rL + 0.055) / 1.055, 2.4) : rL / 12.92;
+            gL = gL > 0.04045 ? Math.pow((gL + 0.055) / 1.055, 2.4) : gL / 12.92;
+            bL = bL > 0.04045 ? Math.pow((bL + 0.055) / 1.055, 2.4) : bL / 12.92;
+            
+            rL *= 100; gL *= 100; bL *= 100;
+            
+            return {
+                x: rL * 0.4124 + gL * 0.3576 + bL * 0.1805,
+                y: rL * 0.2126 + gL * 0.7152 + bL * 0.0722,
+                z: rL * 0.0193 + gL * 0.1192 + bL * 0.9505
+            };
+        }
+
+        // 2단계. XYZ -> CIE Lab 변환 (밝기 L, 색차축 a/b 분할)
+        function xyzToLab(x, y, z) {
+            const refX = 95.047, refY = 100.000, refZ = 108.883;
+            let xt = x / refX, yt = y / refY, zt = z / refZ;
+            
+            xt = xt > 0.008856 ? Math.pow(xt, 1/3) : (7.787 * xt) + (16 / 116);
+            yt = yt > 0.008856 ? Math.pow(yt, 1/3) : (7.787 * yt) + (16 / 116);
+            zt = zt > 0.008856 ? Math.pow(zt, 1/3) : (7.787 * zt) + (16 / 116);
+            
+            return {
+                l: (116 * yt) - 16,
+                a: 500 * (xt - yt),
+                b: 200 * (yt - zt)
+            };
+        }
+
+        // 3단계. 눈에 보이는 실물 색감 차이(델타 E) 판독 엔진 (NaN 방어 강화판)
+        function getVisualColorSimilarity(rgb1, rgb2) {
+            // 정밀 변환 파이프라인 수립 (RGB -> XYZ -> Lab)
+            const xyz1 = rgbToXyz(rgb1.r, rgb1.g, rgb1.b);
+            const lab1 = xyzToLab(xyz1.x, xyz1.y, xyz1.z);
+
+            const xyz2 = rgbToXyz(rgb2.r, rgb2.g, rgb2.b);
+            const lab2 = xyzToLab(xyz2.x, xyz2.y, xyz2.z);
+            
+            // 두 기하학적 Lab 지점의 인지 거리 산출
+            const deltaE = Math.sqrt(
+                Math.pow(lab1.l - lab2.l, 2) +
+                Math.pow(lab1.a - lab2.a, 2) +
+                Math.pow(lab1.b - lab2.b, 2)
+            );
+            
+            // 최대 인지 오차 한계선 설정
+            const strictMaxColorGap = 160.0;
+            
+            // 🚨 핵심 수정: 거듭제곱 연산 전 베이스가 반드시 양수(0 이상)가 되도록 안전장치(Math.max) 적용
+            const base = Math.max(0, 1 - (deltaE / strictMaxColorGap));
+            
+            // 깐깐하고 묵직한 감점 가중치
+            let similarity = 100 * Math.pow(base, 2.5);
+            
+            // 혹시 모를 예외 방어코드 추가
+            if (isNaN(similarity) || similarity < 0) similarity = 0;
+            if (similarity > 100) similarity = 100;
+            
+            return similarity;
+        }
+
         function updatePickerColor() {
             if(isWaitingNextRound) return;
             svPad.style.backgroundColor = `hsl(${currentH}, 100%, 50%)`;
@@ -353,7 +578,7 @@
             clearInterval(timerInterval);
             timerBar.style.width = '100%';
             
-            const tickRate = 50;
+            const tickRate = 20; 
             let totalTicks = (timeLimit * 1000) / tickRate;
             let currentTick = 0;
 
@@ -397,7 +622,6 @@
 
             const rectTrack = hueTrack.getBoundingClientRect();
             const hTrack = rectTrack.height || 210;
-            // 동기화 보정: 선택된 랜덤 H값 위치에 정확히 포인터 안착
             const targetY = (currentH / 360) * hTrack;
             huePointer.style.top = `${targetY}px`;
 
@@ -422,7 +646,6 @@
             updatePickerColor();
         }
 
-        // 수식 및 그라데이션 정밀 동기화 완료
         function handleHueMove(e) {
             if(isWaitingNextRound) return;
             const rect = hueTrack.getBoundingClientRect();
@@ -430,7 +653,6 @@
 
             huePointer.style.top = `${y}px`;
             
-            // CSS 방향에 부합하도록 (y / 전체높이) 구조로 완벽 일치 변경
             currentH = Math.round((y / rect.height) * 360);
             if(currentH >= 360) currentH = 359;
             updatePickerColor();
@@ -465,15 +687,8 @@
             submitBtn.disabled = true;
             submitBtn.innerText = "잠시 후 다음 라운드...";
 
-            const distance = Math.sqrt(
-                Math.pow(targetRGB.r - currentRGB.r, 2) +
-                Math.pow(targetRGB.g - currentRGB.g, 2) +
-                Math.pow(targetRGB.b - currentRGB.b, 2)
-            );
-            
-            const maxDistance = 441.67;
-            let roundScore = 100 - (distance / maxDistance * 100);
-            if (isNaN(roundScore) || roundScore < 0) roundScore = 0;
+            // CIE76 색감 인지 차이 엔진을 기반으로 정밀 채점
+            let roundScore = getVisualColorSimilarity(targetRGB, currentRGB);
             
             totalScore += roundScore;
 
@@ -482,13 +697,15 @@
             targetHex.style.visibility = 'visible';
             pickerHex.style.visibility = 'visible';
 
-            roundFeedback.innerText = `정확도: ${roundScore.toFixed(1)}%`;
+            roundFeedback.innerText = `색감 정확도: ${roundScore.toFixed(1)}%`;
             roundFeedback.style.opacity = '1';
 
             roundHistory.push({
                 roundNum: round,
                 targetHex: targetHex.innerText,
                 pickerHex: pickerHex.innerText,
+                targetRGB: { ...targetRGB },
+                pickerRGB: { ...currentRGB },
                 score: roundScore.toFixed(1)
             });
 
@@ -504,16 +721,24 @@
 
         function showResult() {
             const avgScore = Math.round((totalScore / 5) * 10) / 10;
-            finalScoreText.innerText = avgScore.toFixed(1);
+            
+            // 혹시라도 발생할 최종 스코어 NaN 원천 차단
+            finalScoreText.innerText = isNaN(avgScore) ? "0.0" : avgScore.toFixed(1);
 
-            let recordKey = `v2_${currentGameMode}`;
+            if (currentGameMode === 'timeattack') {
+                gameMetaDisplay.innerText = `타임어택 모드 (제한시간: ${timeLimit.toFixed(1)}초)`;
+            } else {
+                gameMetaDisplay.innerText = `연습 모드 (제한시간 없음)`;
+            }
+
+            let recordKey = `v3_${currentGameMode}`;
             let previousBest = parseFloat(localStorage.getItem(recordKey) || '0.0');
-            if (avgScore > previousBest) {
+            if (avgScore > previousBest && !isNaN(avgScore)) {
                 localStorage.setItem(recordKey, avgScore);
                 evaluationText.innerText = "🏆 최고의 색채 감각 기록 경신!";
             } else {
-                if (avgScore >= 92) evaluationText.innerText = "당신은 초정밀 카메라 센서를 이식받은 수준입니다! 👑";
-                else if (avgScore >= 80) evaluationText.innerText = "감각이 대단히 예리하군요. 웬만한 아티스트급입니다! ✨";
+                if (avgScore >= 88) evaluationText.innerText = "당신은 초정밀 카메라 센서를 이식받은 수준입니다! 👑";
+                else if (avgScore >= 75) evaluationText.innerText = "감각이 대단히 예리하군요. 웬만한 아티스트급입니다! ✨";
                 else evaluationText.innerText = "지극히 평범하고 건강한 시각을 가졌습니다. 👍";
             }
 
@@ -540,6 +765,89 @@
             resultModal.style.display = 'flex';
         }
 
+        function generateAndShareImage() {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            
+            canvas.width = 720;
+            canvas.height = 1120;
+            
+            ctx.fillStyle = '#f8fafc';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            ctx.fillStyle = '#ffffff';
+            ctx.beginPath();
+            ctx.roundRect(40, 40, 640, 1040, 40);
+            ctx.fill();
+            ctx.shadowColor = 'rgba(15, 23, 42, 0.05)';
+            ctx.shadowBlur = 20;
+            
+            ctx.shadowColor = 'transparent';
+            ctx.fillStyle = '#0f172a';
+            ctx.font = 'bold 44px -apple-system, sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText('절대 색감 테스트 결과', 360, 120);
+            
+            ctx.fillStyle = '#64748b';
+            ctx.font = '600 24px -apple-system, sans-serif';
+            const metaStr = currentGameMode === 'timeattack' ? `타임어택 모드 (제한시간: ${timeLimit.toFixed(1)}초)` : '연습 모드 (제한시간 없음)';
+            ctx.fillText(metaStr, 360, 170);
+            
+            const avgScore = (roundHistory.reduce((acc, cur) => acc + parseFloat(cur.score), 0) / 5).toFixed(1);
+            ctx.fillStyle = '#4f46e5';
+            ctx.font = '900 110px -apple-system, sans-serif';
+            ctx.fillText(`${avgScore}점`, 360, 290);
+            
+            ctx.fillStyle = '#334155';
+            ctx.font = 'bold 24px -apple-system, sans-serif';
+            let evalComment = '';
+            const finalScoreVal = parseFloat(avgScore);
+            if (finalScoreVal >= 88) evalComment = '당신의 시각 감각은 거의 신의 경지입니다! 👑';
+            else if (finalScoreVal >= 75) evalComment = '디자이너 뺨치는 뛰어난 색상 정밀도를 가졌습니다! ✨';
+            else evalComment = '일상에서 문제 없는 건강하고 표준적인 눈입니다. 👍';
+            ctx.fillText(evalComment, 360, 360);
+            
+            let startY = 420;
+            roundHistory.forEach((item, index) => {
+                ctx.fillStyle = '#f8fafc';
+                ctx.beginPath();
+                ctx.roundRect(80, startY, 560, 104, 20);
+                ctx.fill();
+                
+                ctx.textAlign = 'left';
+                ctx.fillStyle = '#0f172a';
+                ctx.font = 'bold 26px -apple-system, sans-serif';
+                ctx.fillText(`Round ${item.roundNum}`, 110, startY + 45);
+                
+                ctx.fillStyle = '#64748b';
+                ctx.font = '600 18px -apple-system, sans-serif';
+                ctx.fillText(`목표: ${item.targetHex}  |  제출: ${item.pickerHex}`, 110, startY + 78);
+                
+                ctx.fillStyle = item.targetHex;
+                ctx.beginPath();
+                ctx.roundRect(380, startY + 24, 56, 56, 12);
+                ctx.fill();
+                
+                ctx.fillStyle = item.pickerHex;
+                ctx.beginPath();
+                ctx.roundRect(450, startY + 24, 56, 56, 12);
+                ctx.fill();
+                
+                ctx.textAlign = 'right';
+                ctx.fillStyle = '#4f46e5';
+                ctx.font = 'bold 28px -apple-system, sans-serif';
+                ctx.fillText(`${item.score}%`, 610, startY + 60);
+                
+                startY += 120;
+            });
+            
+            const imageURL = canvas.toDataURL('image/png');
+            const link = document.createElement('a');
+            link.download = `absolute-color-score-${avgScore}.png`;
+            link.href = imageURL;
+            link.click();
+        }
+
         function backToLobby() {
             resultModal.style.display = 'none';
             gamePlayScreen.style.display = 'none';
@@ -550,7 +858,32 @@
 
         window.onload = () => {
             loadBestRecords();
+
+            bindPointerTap(document.getElementById('btn-practice'), () => {
+                selectMode('practice');
+            });
+
+            bindPointerTap(document.getElementById('btn-timeattack'), () => {
+                toggleTimeSetup();
+            });
+
+            bindPointerTap(document.getElementById('btn-start-ta'), () => {
+                selectMode('timeattack');
+            });
+
+            bindPointerTap(submitBtn, () => {
+                submitAnswer();
+            });
+
+            bindPointerTap(document.getElementById('btn-back-lobby'), () => {
+                backToLobby();
+            });
+
+            bindPointerTap(document.getElementById('btn-share-img'), () => {
+                generateAndShareImage();
+            });
         };
     </script>
 </body>
 </html>
+
