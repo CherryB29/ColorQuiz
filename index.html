@@ -104,6 +104,7 @@
             border-radius: 4px;
             background: #fca5a5;
             outline: none;
+            touch-action: pan-x; /* 모바일에서 슬라이더 터치 드래그를 허용 */
         }
 
         .range-slider::-webkit-slider-thumb {
@@ -141,7 +142,14 @@
         .stats { font-size: 1rem; font-weight: 700; color: var(--text-sub); display: flex; justify-content: space-between; padding: 0 4px; }
         
         .timer-container { width: 100%; height: 6px; background: #e2e8f0; border-radius: 3px; margin-top: 10px; overflow: hidden; display: none; }
-        .timer-bar { width: 100%; height: 100%; background: var(--danger); transition: width 0.05s linear; }
+        
+        /* 60fps 초부드러운 하드웨어 가속 타이머 바 구조 */
+        .timer-bar { 
+            width: 100%; height: 100%; 
+            background: var(--danger); 
+            transform-origin: left center;
+            transform: scaleX(1);
+        }
 
         .color-display { display: flex; gap: 16px; margin: 12px 0; }
         .color-card-wrapper { flex: 1; display: flex; flex-direction: column; gap: 6px; }
@@ -237,7 +245,6 @@
         .report-colors { display: flex; gap: 4px; }
         .report-mini-box { width: 28px; height: 28px; border-radius: 6px; box-shadow: inset 0 0 0 1px rgba(0,0,0,0.08); }
 
-        /* 하단 모달 액션 버튼 수정 */
         .result-actions {
             display: flex;
             gap: 10px;
@@ -368,10 +375,12 @@
     </div>
 
     <script>
+        // 화면 바운스 스크롤 제어 (시간 조절 슬라이더 영역 제외하고 차단)
         document.addEventListener('touchmove', function(e) {
-            if (!e.target.closest('.report-container')) {
-                e.preventDefault();
+            if (e.target.closest('.report-container') || e.target.closest('#time-limit-range')) {
+                return; // 슬라이더 조작 및 리포트창 스크롤은 자유롭게 통과시킴
             }
+            e.preventDefault();
         }, { passive: false });
 
         let currentGameMode = 'practice';
@@ -384,7 +393,7 @@
         let roundHistory = [];
 
         let timeLimit = 7.0;
-        let timerInterval = null;
+        let timerTimeout = null; // 대기 실행용 타임아웃
         let isWaitingNextRound = false;
 
         const lobbyScreen = document.getElementById('lobby-screen');
@@ -499,11 +508,7 @@
             return { r: Math.round((r + m) * 255), g: Math.round((g + m) * 255), b: Math.round((b + m) * 255) };
         }
 
-        // ==========================================
-        // 🔬 CIE76 정밀 인간 색채 인지 매핑 변환 엔진
-        // ==========================================
-        
-        // 1단계. 감각 보정용 sRGB -> 선형 XYZ 변환
+        // sRGB -> 선형 XYZ 변환
         function rgbToXyz(r, g, b) {
             let rL = r / 255, gL = g / 255, bL = b / 255;
             rL = rL > 0.04045 ? Math.pow((rL + 0.055) / 1.055, 2.4) : rL / 12.92;
@@ -519,7 +524,7 @@
             };
         }
 
-        // 2단계. XYZ -> CIE Lab 변환 (밝기 L, 색차축 a/b 분할)
+        // XYZ -> CIE Lab 변환
         function xyzToLab(x, y, z) {
             const refX = 95.047, refY = 100.000, refZ = 108.883;
             let xt = x / refX, yt = y / refY, zt = z / refZ;
@@ -535,32 +540,25 @@
             };
         }
 
-        // 3단계. 눈에 보이는 실물 색감 차이(델타 E) 판독 엔진 (NaN 방어 강화판)
+        // CIE76 색감 인지 오차 분석 (NaN 예외 완전 가드)
         function getVisualColorSimilarity(rgb1, rgb2) {
-            // 정밀 변환 파이프라인 수립 (RGB -> XYZ -> Lab)
             const xyz1 = rgbToXyz(rgb1.r, rgb1.g, rgb1.b);
             const lab1 = xyzToLab(xyz1.x, xyz1.y, xyz1.z);
 
             const xyz2 = rgbToXyz(rgb2.r, rgb2.g, rgb2.b);
             const lab2 = xyzToLab(xyz2.x, xyz2.y, xyz2.z);
             
-            // 두 기하학적 Lab 지점의 인지 거리 산출
             const deltaE = Math.sqrt(
                 Math.pow(lab1.l - lab2.l, 2) +
                 Math.pow(lab1.a - lab2.a, 2) +
                 Math.pow(lab1.b - lab2.b, 2)
             );
             
-            // 최대 인지 오차 한계선 설정
             const strictMaxColorGap = 160.0;
-            
-            // 🚨 핵심 수정: 거듭제곱 연산 전 베이스가 반드시 양수(0 이상)가 되도록 안전장치(Math.max) 적용
             const base = Math.max(0, 1 - (deltaE / strictMaxColorGap));
             
-            // 깐깐하고 묵직한 감점 가중치
             let similarity = 100 * Math.pow(base, 2.5);
             
-            // 혹시 모를 예외 방어코드 추가
             if (isNaN(similarity) || similarity < 0) similarity = 0;
             if (similarity > 100) similarity = 100;
             
@@ -574,25 +572,31 @@
             pickerBox.style.backgroundColor = `rgb(${currentRGB.r}, ${currentRGB.g}, ${currentRGB.b})`;
         }
 
+        // 🚀 하드웨어 가속 방식의 매끄러운 타이머 시작 (60FPS 부드러움 제공)
         function startTimer() {
-            clearInterval(timerInterval);
-            timerBar.style.width = '100%';
+            clearTimeout(timerTimeout);
             
-            const tickRate = 20; 
-            let totalTicks = (timeLimit * 1000) / tickRate;
-            let currentTick = 0;
+            // 애니메이션 비활성화 후 시작 위치 리셋
+            timerBar.style.transition = 'none';
+            timerBar.style.transform = 'scaleX(1)';
+            
+            // 즉시 변경사항을 화면에 적용(Reflow 강제 유도)
+            void timerBar.offsetWidth;
+            
+            // CSS 가속 트랜지션을 주입하여 매우 미끄럽고 부드럽게 감쇠 처리
+            timerBar.style.transition = `transform ${timeLimit}s linear`;
+            timerBar.style.transform = 'scaleX(0)';
+            
+            // 설정된 제한 시간이 지난 후에 정답 제출 연계
+            timerTimeout = setTimeout(() => {
+                if (isWaitingNextRound) return;
+                submitAnswer(); 
+            }, timeLimit * 1000);
+        }
 
-            timerInterval = setInterval(() => {
-                if(isWaitingNextRound) return;
-                currentTick++;
-                let percentage = 100 - (currentTick / totalTicks * 100);
-                timerBar.style.width = `${percentage}%`;
-
-                if (currentTick >= totalTicks) {
-                    clearInterval(timerInterval);
-                    submitAnswer(); 
-                }
-            }, tickRate);
+        function stopTimer() {
+            clearTimeout(timerTimeout);
+            timerBar.style.transition = 'none';
         }
 
         function startRound() {
@@ -683,13 +687,11 @@
         function submitAnswer() {
             if(isWaitingNextRound) return;
             isWaitingNextRound = true;
-            clearInterval(timerInterval);
+            stopTimer(); // 게이지 감소 및 대기 중단
             submitBtn.disabled = true;
             submitBtn.innerText = "잠시 후 다음 라운드...";
 
-            // CIE76 색감 인지 차이 엔진을 기반으로 정밀 채점
             let roundScore = getVisualColorSimilarity(targetRGB, currentRGB);
-            
             totalScore += roundScore;
 
             targetHex.innerText = rgbToHexStr(targetRGB.r, targetRGB.g, targetRGB.b);
@@ -721,8 +723,6 @@
 
         function showResult() {
             const avgScore = Math.round((totalScore / 5) * 10) / 10;
-            
-            // 혹시라도 발생할 최종 스코어 NaN 원천 차단
             finalScoreText.innerText = isNaN(avgScore) ? "0.0" : avgScore.toFixed(1);
 
             if (currentGameMode === 'timeattack') {
