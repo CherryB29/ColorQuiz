@@ -104,7 +104,7 @@
             border-radius: 4px;
             background: #fca5a5;
             outline: none;
-            touch-action: pan-x; /* 모바일에서 슬라이더 터치 드래그를 허용 */
+            touch-action: pan-x;
         }
 
         .range-slider::-webkit-slider-thumb {
@@ -143,12 +143,24 @@
         
         .timer-container { width: 100%; height: 6px; background: #e2e8f0; border-radius: 3px; margin-top: 10px; overflow: hidden; display: none; }
         
-        /* 60fps 초부드러운 하드웨어 가속 타이머 바 구조 */
+        /* 초부드러운 하드웨어 가속 타이머 바 */
         .timer-bar { 
             width: 100%; height: 100%; 
-            background: var(--danger); 
             transform-origin: left center;
             transform: scaleX(1);
+            background-color: #3b82f6; /* 시작은 안정적인 파란색 */
+        }
+
+        /* 시간에 비례해 점진적이고 더욱 빠르게 빨간색으로 변환되는 Keyframe */
+        .timer-bar.active {
+            animation: timerProgress var(--timer-duration) linear forwards;
+        }
+
+        @keyframes timerProgress {
+            0% { transform: scaleX(1); background-color: #3b82f6; }
+            50% { transform: scaleX(0.5); background-color: #3b82f6; }  /* 절반 시점(50%)까지는 완연한 파란색 */
+            85% { transform: scaleX(0.15); background-color: #ef4444; } /* 50%~85% 구간 동안 빠르게 경고 빨간색으로 변경 */
+            100% { transform: scaleX(0); background-color: #ef4444; }
         }
 
         .color-display { display: flex; gap: 16px; margin: 12px 0; }
@@ -274,6 +286,53 @@
             stroke-linejoin: round;
         }
 
+        /* 이미지 저장용 전체화면 뷰어 모달 */
+        .viewer-modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(15, 23, 42, 0.9);
+            z-index: 100;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .viewer-image-wrapper {
+            width: 100%;
+            max-width: 340px;
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            margin-bottom: 20px;
+        }
+
+        .viewer-image-wrapper img {
+            width: 100%;
+            display: block;
+        }
+
+        .viewer-notice {
+            color: #cbd5e1;
+            font-size: 0.95rem;
+            font-weight: 600;
+            margin-bottom: 20px;
+            text-align: center;
+            line-height: 1.5;
+        }
+
+        .viewer-close-btn {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            font-size: 1rem;
+            font-weight: 700;
+            border-radius: 14px;
+            cursor: pointer;
+        }
+
         @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
@@ -290,12 +349,12 @@
             <div style="display: flex; flex-direction: column; gap: 14px; width: 100%;">
                 <button id="btn-practice" class="mode-btn">
                     <span class="btn-title">연습 모드 시작</span>
-                    <span class="btn-record" id="record-practice-text">최고 최고기록: 0.0점</span>
+                    <span class="btn-record" id="record-practice-text">최고기록: 0.0점</span>
                 </button>
                 
                 <button id="btn-timeattack" class="mode-btn">
                     <span class="btn-title">타임 어택 모드</span>
-                    <span class="btn-record" id="record-timeattack-text">최고 최고기록: 0.0점</span>
+                    <span class="btn-record" id="record-timeattack-text">최고기록: 0.0점</span>
                 </button>
                 
                 <div id="time-setup">
@@ -374,11 +433,22 @@
         </div>
     </div>
 
+    <!-- 4. 이미지 팝업 뷰어 (모바일 저장 및 공유용) -->
+    <div id="viewer-modal" class="viewer-modal">
+        <div class="viewer-notice">
+            📸 이미지가 완성되었습니다!<br>
+            <strong>이미지를 길게 누르면</strong> 사진첩에 저장하거나<br>카카오톡 등으로 직접 공유할 수 있습니다.
+        </div>
+        <div class="viewer-image-wrapper">
+            <img id="viewer-img" src="" alt="절대색감 결과">
+        </div>
+        <button id="btn-close-viewer" class="viewer-close-btn">닫기</button>
+    </div>
+
     <script>
-        // 화면 바운스 스크롤 제어 (시간 조절 슬라이더 영역 제외하고 차단)
         document.addEventListener('touchmove', function(e) {
             if (e.target.closest('.report-container') || e.target.closest('#time-limit-range')) {
-                return; // 슬라이더 조작 및 리포트창 스크롤은 자유롭게 통과시킴
+                return;
             }
             e.preventDefault();
         }, { passive: false });
@@ -393,7 +463,7 @@
         let roundHistory = [];
 
         let timeLimit = 7.0;
-        let timerTimeout = null; // 대기 실행용 타임아웃
+        let timerTimeout = null;
         let isWaitingNextRound = false;
 
         const lobbyScreen = document.getElementById('lobby-screen');
@@ -423,6 +493,9 @@
         const timeLimitRange = document.getElementById('time-limit-range');
         const sliderValDisplay = document.getElementById('slider-val-display');
         const gameMetaDisplay = document.getElementById('game-meta-display');
+
+        const viewerModal = document.getElementById('viewer-modal');
+        const viewerImg = document.getElementById('viewer-img');
 
         function bindPointerTap(element, callback) {
             let isPointerActive = false;
@@ -540,7 +613,7 @@
             };
         }
 
-        // CIE76 색감 인지 오차 분석 (NaN 예외 완전 가드)
+        // CIE76 색차 알고리즘 기반 색감 판독 엔진
         function getVisualColorSimilarity(rgb1, rgb2) {
             const xyz1 = rgbToXyz(rgb1.r, rgb1.g, rgb1.b);
             const lab1 = xyzToLab(xyz1.x, xyz1.y, xyz1.z);
@@ -572,22 +645,17 @@
             pickerBox.style.backgroundColor = `rgb(${currentRGB.r}, ${currentRGB.g}, ${currentRGB.b})`;
         }
 
-        // 🚀 하드웨어 가속 방식의 매끄러운 타이머 시작 (60FPS 부드러움 제공)
+        // 하드웨어 가속 기반 애니메이션 타이머
         function startTimer() {
             clearTimeout(timerTimeout);
             
-            // 애니메이션 비활성화 후 시작 위치 리셋
-            timerBar.style.transition = 'none';
-            timerBar.style.transform = 'scaleX(1)';
+            timerBar.classList.remove('active');
+            timerBar.style.setProperty('--timer-duration', `${timeLimit}s`);
             
-            // 즉시 변경사항을 화면에 적용(Reflow 강제 유도)
-            void timerBar.offsetWidth;
+            void timerBar.offsetWidth; // 리플로우 강제 유발로 캐시 초기화
             
-            // CSS 가속 트랜지션을 주입하여 매우 미끄럽고 부드럽게 감쇠 처리
-            timerBar.style.transition = `transform ${timeLimit}s linear`;
-            timerBar.style.transform = 'scaleX(0)';
+            timerBar.classList.add('active');
             
-            // 설정된 제한 시간이 지난 후에 정답 제출 연계
             timerTimeout = setTimeout(() => {
                 if (isWaitingNextRound) return;
                 submitAnswer(); 
@@ -596,7 +664,7 @@
 
         function stopTimer() {
             clearTimeout(timerTimeout);
-            timerBar.style.transition = 'none';
+            timerBar.classList.remove('active');
         }
 
         function startRound() {
@@ -687,7 +755,7 @@
         function submitAnswer() {
             if(isWaitingNextRound) return;
             isWaitingNextRound = true;
-            stopTimer(); // 게이지 감소 및 대기 중단
+            stopTimer(); 
             submitBtn.disabled = true;
             submitBtn.innerText = "잠시 후 다음 라운드...";
 
@@ -765,7 +833,7 @@
             resultModal.style.display = 'flex';
         }
 
-        function generateAndShareImage() {
+        function generateAndShowShareImage() {
             const canvas = document.createElement('canvas');
             const ctx = canvas.getContext('2d');
             
@@ -779,10 +847,7 @@
             ctx.beginPath();
             ctx.roundRect(40, 40, 640, 1040, 40);
             ctx.fill();
-            ctx.shadowColor = 'rgba(15, 23, 42, 0.05)';
-            ctx.shadowBlur = 20;
             
-            ctx.shadowColor = 'transparent';
             ctx.fillStyle = '#0f172a';
             ctx.font = 'bold 44px -apple-system, sans-serif';
             ctx.textAlign = 'center';
@@ -842,10 +907,8 @@
             });
             
             const imageURL = canvas.toDataURL('image/png');
-            const link = document.createElement('a');
-            link.download = `absolute-color-score-${avgScore}.png`;
-            link.href = imageURL;
-            link.click();
+            viewerImg.src = imageURL;
+            viewerModal.style.display = 'flex';
         }
 
         function backToLobby() {
@@ -880,7 +943,11 @@
             });
 
             bindPointerTap(document.getElementById('btn-share-img'), () => {
-                generateAndShareImage();
+                generateAndShowShareImage();
+            });
+
+            bindPointerTap(document.getElementById('btn-close-viewer'), () => {
+                viewerModal.style.display = 'none';
             });
         };
     </script>
