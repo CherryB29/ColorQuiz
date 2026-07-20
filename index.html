@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>절대 색감 테스트 2.0</title>
+    <style>
+        :root {
+            --primary: #4f46e5;
+            --primary-dark: #4338ca;
+            --success: #10b981;
+            --danger: #ef4444;
+            --bg-main: #f8fafc;
+            --surface: #ffffff;
+            --text-main: #0f172a;
+            --text-sub: #64748b;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0; padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", sans-serif;
+            -webkit-user-select: none; user-select: none;
+            -webkit-touch-callout: none;
+        }
+
+        /* 브라우저 스크롤 및 바운스 원천 차단 */
+        html, body {
+            width: 100%; height: 100%;
+            overflow: hidden; position: fixed;
+            background-color: var(--bg-main); color: var(--text-main);
+            display: flex; align-items: center; justify-content: center;
+        }
+
+        .game-container {
+            width: 100%; max-width: 380px; height: 100%; max-height: 720px;
+            background: var(--surface); text-align: center;
+            position: relative; overflow: hidden;
+            display: flex; flex-direction: column; justify-content: space-between;
+            padding: 24px 20px calc(24px + env(safe-area-inset-bottom));
+        }
+
+        @media (min-height: 700px) {
+            .game-container {
+                height: 90%; border-radius: 32px;
+                box-shadow: 0 20px 40px rgba(15, 23, 42, 0.08);
+            }
+        }
+
+        h1 { font-size: 1.7rem; font-weight: 800; color: var(--text-main); letter-spacing: -0.5px; }
+        .sub-title { font-size: 0.95rem; color: var(--text-sub); margin-top: 6px; }
+        
+        /* 로비 테두리 및 기록 배치 */
+        .lobby-content { flex: 1; display: flex; flex-direction: column; justify-content: center; gap: 20px; }
+        .best-records {
+            background: #f1f5f9; border-radius: 20px; padding: 18px;
+            text-align: left; font-size: 0.95rem; color: #334155;
+            display: flex; flex-direction: column; gap: 10px;
+        }
+        .best-records span { font-weight: 700; color: var(--primary); float: right; }
+        
+        .mode-btn {
+            padding: 18px; border-radius: 18px; border: none; font-size: 1.1rem; font-weight: 700;
+            color: white; cursor: pointer; transition: transform 0.1s, opacity 0.2s;
+        }
+        #btn-practice { background: var(--success); box-shadow: 0 4px 14px rgba(16, 185, 129, 0.25); }
+        #btn-timeattack { background: var(--danger); box-shadow: 0 4px 14px rgba(239, 68, 68, 0.25); }
+
+        #time-setup {
+            display: none; background: #fff5f5; padding: 16px; border-radius: 18px;
+            border: 1px solid #fee2e2; animation: fadeIn 0.3s ease;
+        }
+        #time-setup label { font-size: 0.9rem; font-weight: 700; color: #991b1b; display: block; margin-bottom: 10px;}
+        .time-inputs { display: flex; justify-content: center; gap: 10px; }
+        .time-inputs input {
+            width: 80px; padding: 10px; text-align: center; border: 1px solid #fca5a5;
+            border-radius: 10px; font-size: 1.1rem; font-weight: 700; color: #991b1b; outline: none;
+        }
+        .start-ta-btn { padding: 0 20px; background: var(--danger); color: white; border: none; border-radius: 10px; font-weight: 700; }
+
+        /* 게임 인게임 레이아웃 */
+        #game-play { display: none; height: 100%; flex-direction: column; justify-content: space-between; flex: 1; }
+        .game-header { margin-bottom: 12px; }
+        .stats { font-size: 1rem; font-weight: 700; color: var(--text-sub); display: flex; justify-content: space-between; padding: 0 4px; }
+        
+        .timer-container { width: 100%; height: 6px; background: #e2e8f0; border-radius: 3px; margin-top: 10px; overflow: hidden; display: none; }
+        .timer-bar { width: 100%; height: 100%; background: var(--danger); transition: width 0.1s linear; }
+
+        /* 색상 비교 카드 */
+        .color-display { display: flex; gap: 16px; margin: 12px 0; }
+        .color-card-wrapper { flex: 1; display: flex; flex-direction: column; gap: 6px; }
+        .color-box {
+            width: 100%; height: 100px; border-radius: 20px;
+            box-shadow: inset 0 0 0 1px rgba(0,0,0,0.05), 0 4px 12px rgba(0,0,0,0.04);
+            position: relative; transition: background-color 0.1s ease;
+        }
+        .color-label { font-size: 0.8rem; font-weight: 700; color: var(--text-sub); }
+        .color-hex { font-size: 0.8rem; font-weight: 600; color: var(--text-main); margin-top: 2px; visibility: hidden; }
+
+        /* 중간 피드백 레이어 */
+        #round-feedback {
+            font-size: 1.2rem; font-weight: 800; color: var(--primary);
+            height: 24px; margin-bottom: 8px; opacity: 0; transition: opacity 0.2s;
+        }
+
+        /* 2차원 컬러 피커 대폭 개선 */
+        .picker-area { display: flex; gap: 16px; height: 210px; margin-bottom: 16px; }
+        .sv-pad {
+            flex: 1; position: relative; border-radius: 20px; overflow: hidden;
+            box-shadow: 0 4px 16px rgba(15, 23, 42, 0.15); touch-action: none;
+        }
+        .sv-pad::before { content: ""; position: absolute; top:0; left:0; width:100%; height:100%; background: linear-gradient(to right, #fff, transparent); }
+        .sv-pad::after { content: ""; position: absolute; top:0; left:0; width:100%; height:100%; background: linear-gradient(to top, #000, transparent); }
+        
+        .sv-pointer {
+            position: absolute; width: 22px; height: 22px; border: 3px solid white;
+            border-radius: 50%; box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+            transform: translate(-50%, -50%); pointer-events: none; z-index: 2;
+        }
+
+        .hue-slider-wrap { width: 32px; position: relative; }
+        .hue-slider {
+            -webkit-appearance: none; appearance: none; width: 210px; height: 32px;
+            border-radius: 16px; outline: none;
+            background: linear-gradient(to right, #ff0000 0%, #ffff00 17%, #00ff00 33%, #00ffff 50%, #0000ff 67%, #ff00ff 83%, #ff0000 100%);
+            transform: rotate(90deg); transform-origin: top left;
+            position: absolute; top: 0; left: 32px; box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .hue-slider::-webkit-slider-thumb {
+            -webkit-appearance: none; width: 28px; height: 28px; border-radius: 50%;
+            background: white; border: 3px solid #334155; box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+        }
+
+        .action-btn {
+            width: 100%; padding: 18px; border: none; border-radius: 18px;
+            background-color: var(--primary); color: white; font-size: 1.1rem; font-weight: 700;
+            box-shadow: 0 4px 14px rgba(79, 70, 229, 0.3); -webkit-tap-highlight-color: transparent;
+        }
+        button:active { transform: scale(0.97); opacity: 0.9; }
+
+        /* 결과 화면 스크롤 리포트 */
+        .modal {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(15, 23, 42, 0.6); align-items: center; justify-content: center; padding: 20px; z-index: 10;
+        }
+        .modal-content {
+            background: white; padding: 24px; border-radius: 28px; width: 100%; max-width: 350px;
+            max-height: 85%; display: flex; flex-direction: column; justify-content: space-between;
+        }
+        .score-text { font-size: 2.6rem; font-weight: 900; color: var(--primary); margin: 8px 0; }
+        .evaluation-p { color: var(--text-sub); font-size: 0.95rem; line-height: 1.5; margin-bottom: 16px; }
+        
+        /* 라운드 기록 컨테이너 (결과창 내부 스크롤 허용) */
+        .report-container {
+            flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch;
+            margin-bottom: 16px; padding-right: 4px; display: flex; flex-direction: column; gap: 10px;
+        }
+        /* 스크롤바 커스텀 */
+        .report-container::-webkit-scrollbar { width: 4px; }
+        .report-container::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 2px; }
+
+        .report-item {
+            display: flex; align-items: center; justify-content: space-between;
+            background: #f8fafc; padding: 10px 14px; border-radius: 14px; border: 1px solid #f1f5f9;
+        }
+        .report-title { font-size: 0.85rem; font-weight: 700; color: var(--text-main); text-align: left;}
+        .report-score { font-size: 0.9rem; font-weight: 800; color: var(--primary); }
+        .report-colors { display: flex; gap: 6px; }
+        .report-mini-box { width: 32px; height: 32px; border-radius: 8px; box-shadow: inset 0 0 0 1px rgba(0,0,0,0.08); }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body>
+
+    <div class="game-container">
+        <div id="lobby-screen" class="lobby-content">
+            <div>
+                <h1>절대 색감 테스트</h1>
+                <div class="sub-title">당신의 눈썰미는 몇 점짜리일까요?</div>
+            </div>
+            
+            <div class="best-records">
+                <div>🟩 연습 모드 최고점 <span id="best-practice">0.0점</span></div>
+                <div>🟥 타임어택 최고점 <span id="best-timeattack">0.0점</span></div>
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: 12px;">
+                <button id="btn-practice" class="mode-btn" onclick="selectMode('practice')">연습 모드 시작</button>
+                <button id="btn-timeattack" class="mode-btn" onclick="toggleTimeSetup()">타임 어택 모드</button>
+                
+                <div id="time-setup">
+                    <label>⏱️ 제한 시간 설정 (초)</label>
+                    <div class="time-inputs">
+                        <input type="number" id="time-limit-input" min="3" max="60" value="7" pattern="\d*">
+                        <button class="start-ta-btn" onclick="selectMode('timeattack')">시작</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="game-play">
+            <div class="game-header">
+                <div class="stats">
+                    <span id="mode-title">연습 모드</span>
+                    <span>ROUND <span id="round">1</span> / 5</span>
+                </div>
+                <div class="timer-container" id="timer-container">
+                    <div class="timer-bar" id="timer-bar"></div>
+                </div>
+            </div>
+
+            <div class="color-display">
+                <div class="color-card-wrapper">
+                    <div class="color-label">목표 색상</div>
+                    <div id="target-box" class="color-box"></div>
+                    <div id="target-hex" class="color-hex">#000000</div>
+                </div>
+                <div class="color-card-wrapper">
+                    <div class="color-label">내가 고른 색</div>
+                    <div id="picker-box" class="color-box"></div>
+                    <div id="picker-hex" class="color-hex">#000000</div>
+                </div>
+            </div>
+
+            <div id="round-feedback">정확도 95.5%</div>
+
+            <div class="picker-area">
+                <div class="sv-pad" id="sv-pad">
+                    <div class="sv-pointer" id="sv-pointer"></div>
+                </div>
+                <div class="hue-slider-wrap">
+                    <input type="range" id="hue-slider" class="hue-slider" min="0" max="360" value="0">
+                </div>
+            </div>
+
+            <button id="submit-btn" class="action-btn" onclick="submitAnswer()">선택 완료</button>
+        </div>
+    </div>
+
+    <div id="result-modal" class="modal">
+        <div class="modal-content">
+            <div>
+                <h2>최종 결과</h2>
+                <div class="score-text"><span id="final-score">0.0</span>점</div>
+                <p id="evaluation-text" class="evaluation-p">결과 분석 중...</p>
+            </div>
+
+            <div class="report-container" id="report-container">
+                </div>
+
+            <button class="action-btn" onclick="backToLobby()">로비로 돌아가기</button>
+        </div>
+    </div>
+
+    <script>
+        // 전반적인 모바일 스크롤 바운스 방지 인터셉터
+        document.addEventListener('touchmove', function(e) {
+            if (!e.target.closest('.report-container')) {
+                e.preventDefault();
+            }
+        }, { passive: false });
+
+        let currentGameMode = 'practice';
+        let round = 1;
+        let totalScore = 0;
+        
+        let targetRGB = { r: 0, g: 0, b: 0 };
+        let currentRGB = { r: 255, g: 0, b: 0 };
+        let currentH = 0, currentS = 50, currentV = 50;
+
+        // 라운드별 세부 결과 저장 리스트
+        let roundHistory = [];
+
+        let timeLimit = 7;
+        let timerInterval = null;
+        let isWaitingNextRound = false;
+
+        const lobbyScreen = document.getElementById('lobby-screen');
+        const gamePlayScreen = document.getElementById('game-play');
+        const timeSetup = document.getElementById('time-setup');
+        const timerContainer = document.getElementById('timer-container');
+        const timerBar = document.getElementById('timer-bar');
+        
+        const targetBox = document.getElementById('target-box');
+        const pickerBox = document.getElementById('picker-box');
+        const targetHex = document.getElementById('target-hex');
+        const pickerHex = document.getElementById('picker-hex');
+        const roundFeedback = document.getElementById('round-feedback');
+        const submitBtn = document.getElementById('submit-btn');
+        
+        const svPad = document.getElementById('sv-pad');
+        const svPointer = document.getElementById('sv-pointer');
+        const hueSlider = document.getElementById('hue-slider');
+        const roundText = document.getElementById('round');
+        const modeTitle = document.getElementById('mode-title');
+        const resultModal = document.getElementById('result-modal');
+        const finalScoreText = document.getElementById('final-score');
+        const evaluationText = document.getElementById('evaluation-text');
+        const reportContainer = document.getElementById('report-container');
+
+        function loadBestRecords() {
+            document.getElementById('best-practice').innerText = parseFloat(localStorage.getItem('v2_practice') || '0.0').toFixed(1) + '점';
+            document.getElementById('best-timeattack').innerText = parseFloat(localStorage.getItem('v2_timeattack') || '0.0').toFixed(1) + '점';
+        }
+
+        function toggleTimeSetup() {
+            timeSetup.style.display = timeSetup.style.display === 'block' ? 'none' : 'block';
+        }
+
+        function selectMode(mode) {
+            currentGameMode = mode;
+            lobbyScreen.style.display = 'none';
+            gamePlayScreen.style.display = 'flex';
+            
+            if (mode === 'timeattack') {
+                modeTitle.innerText = '⏱️ 타임어택';
+                modeTitle.style.color = 'var(--danger)';
+                timerContainer.style.display = 'block';
+                timeLimit = parseInt(document.getElementById('time-limit-input').value) || 7;
+            } else {
+                modeTitle.innerText = '🟩 연습 모드';
+                modeTitle.style.color = 'var(--success)';
+                timerContainer.style.display = 'none';
+            }
+            
+            round = 1;
+            totalScore = 0;
+            roundHistory = [];
+            startRound();
+        }
+
+        function rgbToHexStr(r, g, b) {
+            return "#" + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1).toUpperCase();
+        }
+
+        function hsvToRgb(h, s, v) {
+            s /= 100; v /= 100;
+            let c = v * s;
+            let x = c * (1 - Math.abs((h / 60) % 2 - 1));
+            let m = v - c;
+            let r = 0, g = 0, b = 0;
+            if (0 <= h && h < 60) { r = c; g = x; b = 0; }
+            else if (60 <= h && h < 120) { r = x; g = c; b = 0; }
+            else if (120 <= h && h < 180) { r = 0; g = c; b = x; }
+            else if (180 <= h && h < 240) { r = 0; g = x; b = c; }
+            else if (240 <= h && h < 300) { r = x; g = 0; b = c; }
+            else if (300 <= h && h <= 360) { r = c; g = 0; b = x; }
+            return { r: Math.round((r + m) * 255), g: Math.round((g + m) * 255), b: Math.round((b + m) * 255) };
+        }
+
+        function updatePickerColor() {
+            if(isWaitingNextRound) return;
+            svPad.style.backgroundColor = `hsl(${currentH}, 100%, 50%)`;
+            currentRGB = hsvToRgb(currentH, currentS, currentV);
+            pickerBox.style.backgroundColor = `rgb(${currentRGB.r}, ${currentRGB.g}, ${currentRGB.b})`;
+        }
+
+        function startTimer() {
+            clearInterval(timerInterval);
+            timerBar.style.width = '100%';
+            
+            const tickRate = 50;
+            let totalTicks = (timeLimit * 1000) / tickRate;
+            let currentTick = 0;
+
+            timerInterval = setInterval(() => {
+                if(isWaitingNextRound) return;
+                currentTick++;
+                let percentage = 100 - (currentTick / totalTicks * 100);
+                timerBar.style.width = `${percentage}%`;
+
+                if (currentTick >= totalTicks) {
+                    clearInterval(timerInterval);
+                    submitAnswer(); 
+                }
+            }, tickRate);
+        }
+
+        function startRound() {
+            isWaitingNextRound = false;
+            submitBtn.disabled = false;
+            submitBtn.innerText = "선택 완료";
+            targetHex.style.visibility = 'hidden';
+            pickerHex.style.visibility = 'hidden';
+            roundFeedback.style.opacity = '0';
+
+            roundText.innerText = round;
+            targetRGB = {
+                r: Math.floor(Math.random() * 256),
+                g: Math.floor(Math.random() * 256),
+                b: Math.floor(Math.random() * 256)
+            };
+            targetBox.style.backgroundColor = `rgb(${targetRGB.r}, ${targetRGB.g}, ${targetRGB.b})`;
+            
+            currentH = Math.floor(Math.random() * 360); 
+            hueSlider.value = currentH;
+            currentS = 50; currentV = 50;
+            
+            const rect = svPad.getBoundingClientRect();
+            const w = rect.width || 296;
+            const h = rect.height || 210;
+            svPointer.style.left = `${w * 0.5}px`;
+            svPointer.style.top = `${h * 0.5}px`;
+
+            updatePickerColor();
+
+            if (currentGameMode === 'timeattack') {
+                startTimer();
+            }
+        }
+
+        function handlePadMove(e) {
+            if(isWaitingNextRound) return;
+            const rect = svPad.getBoundingClientRect();
+            let clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            let clientY = e.touches ? e.touches[0].clientY : e.clientY;
+            let x = Math.max(0, Math.min(clientX - rect.left, rect.width));
+            let y = Math.max(0, Math.min(clientY - rect.top, rect.height));
+
+            svPointer.style.left = `${x}px`;
+            svPointer.style.top = `${y}px`;
+
+            currentS = Math.round((x / rect.width) * 100);
+            currentV = Math.round((1 - (y / rect.height)) * 100);
+            updatePickerColor();
+        }
+
+        let isDragging = false;
+        svPad.addEventListener('mousedown', (e) => { isDragging = true; handlePadMove(e); });
+        window.addEventListener('mousemove', (e) => { if(isDragging) handlePadMove(e); });
+        window.addEventListener('mouseup', () => isDragging = false);
+        svPad.addEventListener('touchstart', (e) => { isDragging = true; handlePadMove(e); });
+        svPad.addEventListener('touchmove', (e) => { if(isDragging) handlePadMove(e); });
+        window.addEventListener('touchend', () => isDragging = false);
+
+        hueSlider.addEventListener('input', (e) => {
+            if(isWaitingNextRound) return;
+            currentH = parseInt(e.target.value);
+            updatePickerColor();
+        });
+
+        // 답안 제출 및 1초 대기 로직 구현
+        function submitAnswer() {
+            if(isWaitingNextRound) return;
+            isWaitingNextRound = true;
+            clearInterval(timerInterval);
+            submitBtn.disabled = true;
+            submitBtn.innerText = "잠시 후 다음 라운드...";
+
+            const distance = Math.sqrt(
+                Math.pow(targetRGB.r - currentRGB.r, 2) +
+                Math.pow(targetRGB.g - currentRGB.g, 2) +
+                Math.pow(targetRGB.b - currentRGB.b, 2)
+            );
+            
+            const maxDistance = 441.67;
+            let roundScore = 100 - (distance / maxDistance * 100);
+            if (isNaN(roundScore) || roundScore < 0) roundScore = 0;
+            
+            totalScore += roundScore;
+
+            // 라운드별 텍스트 코드 표기 활성화
+            targetHex.innerText = rgbToHexStr(targetRGB.r, targetRGB.g, targetRGB.b);
+            pickerHex.innerText = rgbToHexStr(currentRGB.r, currentRGB.g, currentRGB.b);
+            targetHex.style.visibility = 'visible';
+            pickerHex.style.visibility = 'visible';
+
+            // 정확도 1초간 실시간 안내
+            roundFeedback.innerText = `정확도: ${roundScore.toFixed(1)}%`;
+            roundFeedback.style.opacity = '1';
+
+            // 리포트용 기록 저장
+            roundHistory.push({
+                roundNum: round,
+                targetHex: targetHex.innerText,
+                pickerHex: pickerHex.innerText,
+                score: roundScore.toFixed(1)
+            });
+
+            setTimeout(() => {
+                if (round < 5) {
+                    round++;
+                    startRound();
+                } else {
+                    showResult();
+                }
+            }, 1000); // 정확히 1초 대기
+        }
+
+        function showResult() {
+            const avgScore = Math.round((totalScore / 5) * 10) / 10;
+            finalScoreText.innerText = avgScore.toFixed(1);
+
+            // 로비 데이터 동기화
+            let recordKey = `v2_${currentGameMode}`;
+            let previousBest = parseFloat(localStorage.getItem(recordKey) || '0.0');
+            if (avgScore > previousBest) {
+                localStorage.setItem(recordKey, avgScore);
+                evaluationText.innerText = "🏆 최고의 색채 감각 기록 경신!";
+            } else {
+                if (avgScore >= 92) evaluationText.innerText = "당신은 초정밀 카메라 센서를 이식받은 수준입니다! 👑";
+                else if (avgScore >= 80) evaluationText.innerText = "감각이 대단히 예리하군요. 웬만한 아티스트급입니다! ✨";
+                else evaluationText.innerText = "지극히 평범하고 건강한 시각을 가졌습니다. 👍";
+            }
+
+            // 하단 결과창 상세 리포트 동적 DOM 그리기
+            reportContainer.innerHTML = '';
+            roundHistory.forEach(item => {
+                const row = document.createElement('div');
+                row.className = 'report-item';
+                row.innerHTML = `
+                    <div>
+                        <div class="report-title">Round ${item.roundNum}</div>
+                        <div style="font-size: 0.75rem; color: var(--text-sub); margin-top:2px;">목표: ${item.targetHex} | 제출: ${item.pickerHex}</div>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <div class="report-colors">
+                            <div class="report-mini-box" style="background-color: ${item.targetHex};"></div>
+                            <div class="report-mini-box" style="background-color: ${item.pickerHex};"></div>
+                        </div>
+                        <div class="report-score">${item.score}%</div>
+                    </div>
+                `;
+                reportContainer.appendChild(row);
+            });
+
+            resultModal.style.display = 'flex';
+        }
+
+        function backToLobby() {
+            resultModal.style.display = 'none';
+            gamePlayScreen.style.display = 'none';
+            lobbyScreen.style.display = 'flex';
+            timeSetup.style.display = 'none';
+            loadBestRecords();
+        }
+
+        window.onload = () => {
+            loadBestRecords();
+        };
+    </script>
+</body>
+</html>
